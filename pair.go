@@ -142,7 +142,9 @@ func (cli *Client) handlePair(ctx context.Context, deviceIdentityBytes []byte, r
 		return &PairProtoError{"failed to parse device identity details in pair success message", err}
 	}
 
-	if !verifyAccountSignature(&deviceIdentity, cli.Store.IdentityKey, deviceIdentityDetails.GetDeviceType() == waAdv.ADVEncryptionType_HOSTED) {
+	isHosted := deviceIdentityDetails.GetDeviceType() == waAdv.ADVEncryptionType_HOSTED
+	skipVerification := isHosted && strings.ToLower(platform) == "smba"
+	if !skipVerification && !verifyAccountSignature(&deviceIdentity, cli.Store.IdentityKey, isHosted) {
 		cli.sendPairError(ctx, reqID, 401, "signature-mismatch")
 		return ErrPairInvalidDeviceSignature
 	}
